@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PA ZU - TEBAK LAGU NASIONAL MP3</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+    
+    body { 
+      background: #0b0914; 
+      color: #ffffff; 
+      min-height: 100vh;
+      min-height: 100dvh; 
+      display: flex; 
+      flex-direction: column; 
+      overflow-x: hidden; 
+    }
+
+    /* HEADER UTAMA */
+    .top-header { 
+      background: #161224; 
+      height: 55px; 
+      border-bottom: 3px solid #ff007f; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 0 15px; 
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.4); 
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .student-badge { font-size: 13px; color: #00f0ff; font-weight: bold; }
+    .status-group { display: flex; align-items: center; gap: 10px; }
+    .rank-badge { background: linear-gradient(135deg, #7928ca, #ff007f); padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 900; color: #ffe600; border: 1px solid #ffe600; }
+    .score-badge { font-size: 16px; font-weight: 900; color: #ffe600; }
+
+    /* START SCREEN */
+    .start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #282142 0%, #0b0914 100%); z-index: 9998; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+    .start-title { color: #00f0ff; font-size: 28px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase; text-shadow: 0 0 15px #00f0ff; }
+    .start-subtitle { color: #ff007f; font-size: 14px; font-weight: 800; margin-bottom: 20px; text-transform: uppercase; }
+    
+    .student-form { background: #161224; border: 3px solid #ff007f; padding: 20px; border-radius: 18px; width: 100%; max-width: 350px; margin-bottom: 18px; text-align: left; box-shadow: 0 0 20px rgba(255, 0, 127, 0.3); }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 14px; color: #ffe600; font-weight: bold; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 14px; font-size: 16px; border-radius: 10px; border: 2px solid #7928ca; background: #0b0914; color: #fff; outline: none; }
+    
+    .start-btn { background: linear-gradient(135deg, #00f0ff, #7928ca); color: #fff; font-size: 18px; font-weight: 900; padding: 15px 30px; border: 2px solid #fff; border-radius: 30px; cursor: pointer; box-shadow: 0 0 18px rgba(0, 240, 255, 0.6); width: 100%; max-width: 350px; text-transform: uppercase; }
+
+    /* QUIZ CONTAINER */
+    .quiz-container { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 15px; max-width: 450px; margin: 0 auto; width: 100%; }
+    
+    .question-card { 
+      background: #161224; 
+      border: 2px solid #7928ca; 
+      border-radius: 16px; 
+      padding: 18px; 
+      width: 100%; 
+      text-align: center; 
+      margin-bottom: 15px; 
+      box-shadow: 0 0 12px rgba(121, 40, 202, 0.3); 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .q-number { font-size: 14px; color: #00f0ff; font-weight: bold; margin-bottom: 6px; }
+    .q-title { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 14px; }
+
+    .play-audio-btn { 
+      background: linear-gradient(135deg, #ff007f, #7928ca); 
+      color: #fff; 
+      border: 2px solid #ffe600; 
+      padding: 14px 20px; 
+      border-radius: 25px; 
+      font-size: 15px; 
+      font-weight: 900; 
+      cursor: pointer; 
+      width: 100%; 
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.5); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 8px; 
+    }
+    .play-audio-btn:active { transform: scale(0.97); }
+
+    /* IFRAME PLAYER GOOGLE DRIVE */
+    .player-box { 
+      width: 100%; 
+      margin-top: 15px; 
+      border-radius: 12px; 
+      overflow: hidden; 
+      height: 80px; 
+      background: #000; 
+      display: none; 
+      border: 2px solid #ff007f;
+      box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+    }
+    .player-box iframe { 
+      width: 100%; 
+      height: 100px; 
+      margin-top: -10px; 
+      border: none; 
+    }
+
+    /* OPTIONS CARDS */
+    .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; }
+    .option-card { background: #161224; border: 2px solid #332a54; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 800; color: #fff; text-align: center; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+    .option-card:active { transform: scale(0.98); }
+    
+    /* JAWABAN BENAR HIJAU */
+    .option-card.correct-selected { background: #10b981 !important; border-color: #fff !important; color: #fff !important; box-shadow: 0 0 15px #10b981; }
+
+    /* RESULT SCREEN */
+    .result-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #282142 0%, #0b0914 100%); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+    .result-title { font-size: 28px; font-weight: 900; color: #ffe600; margin-bottom: 10px; }
+    .result-score { font-size: 48px; font-weight: 900; color: #00f0ff; text-shadow: 0 0 20px #00f0ff; margin-bottom: 10px; }
+    .result-rank { font-size: 22px; font-weight: 900; color: #ff007f; margin-bottom: 15px; background: #161224; padding: 10px 20px; border-radius: 20px; border: 2px solid #ff007f; }
+    .save-status { font-size: 13px; color: #00f0ff; margin-bottom: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div class="start-screen" id="start-screen">
+    <div class="start-title">PA ZU</div>
+    <div class="start-subtitle">🇲🇨 KUIS TEBAK LAGU NASIONAL 🇲🇨</div>
+    
+    <div class="student-form">
+      <div class="form-group">
+        <label for="student-name">Nama Lengkap Murid:</label>
+        <input type="text" id="student-name" placeholder="Ketik nama lengkap..." autocomplete="off">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="student-class">Kelas:</label>
+        <input type="text" id="student-class" placeholder="Contoh: 7.1" autocomplete="off">
+      </div>
+    </div>
+
+    <button class="start-btn" onclick="startQuiz()">MULAI KUIS 🚀</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="top-header">
+    <div class="student-badge" id="display-student">Siswa: -</div>
+    <div class="status-group">
+      <div class="rank-badge" id="rank-badge">WARRIOR</div>
+      <div class="score-badge" id="score-badge">SKOR: 0</div>
+    </div>
+  </div>
+
+  <!-- QUIZ CONTAINER -->
+  <div class="quiz-container" id="quiz-area" style="display:none;">
+    <div class="question-card">
+      <div class="q-number" id="q-number">SOAL 1 / 20</div>
+      <div class="q-title">Dengarkan potongan MP3 lalu tebak judul lagu nasional berikut:</div>
+      <button class="play-audio-btn" id="audio-btn" onclick="playAudio()">
+        🔊 PUTAR MELODI LAGU (MP3)
+      </button>
+
+      <!-- TAMPILAN PEMUTAR AUDIO GOOGLE DRIVE -->
+      <div class="player-box" id="player-box">
+        <iframe id="drive-iframe" allow="autoplay"></iframe>
+      </div>
+    </div>
+
+    <div class="options-grid" id="options-container"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="result-screen" id="result-screen">
+    <div class="result-title">HASIL KUIS TEBAK LAGU</div>
+    <div class="result-score" id="final-score">0 / 100</div>
+    <div class="result-rank" id="final-rank">RANK: WARRIOR</div>
+    <div class="save-status" id="save-status">⏳ Menyimpan nilai ke Google Sheet...</div>
+    <button class="start-btn" onclick="location.reload()">MAIN LAGI 🔄</button>
+  </div>
+
+  <script>
+    // TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT KAMU DI SINI
+    const GOOGLE_SCRIPT_URL = "URL_GOOGLE_SCRIPT_KAMU_DI_SINI";
+
+    let studentName = "";
+    let studentClass = "";
+    let currentQuestionIdx = 0;
+    let score = 0;
+    let quizList = [];
+
+    function getDriveUrl(fileId) {
+      return "https://drive.google.com/file/d/" + fileId + "/preview";
+    }
+
+    const RAW_QUIZ_DATA = [
+      { title: "Bendera Merah Putih", driveId: "1yTxX9jwZ-JOEWOgzI6cdk0JfZtRctj0S", options: ["Bendera Merah Putih", "Bagimu Negeri", "Indonesia Pusaka", "Syukur"] },
+      { title: "Rayuan Pulau Kelapa", driveId: "1DE8oWdoBHyhg4tnDKD4V6Bi0zPLnCHff", options: ["Rayuan Pulau Kelapa", "Tanah Airku", "Nyiur Hijau", "Indonesia Pusaka"] },
+      { title: "Syukur", driveId: "1tKa1ZziSZ5BvzjOtz2pxpPNuV8QrwkvJ", options: ["Syukur", "Gugur Bunga", "Rayuan Pulau Kelapa", "Indonesia Pusaka"] },
+      { title: "Bhinneka Tunggal Ika", driveId: "1ktbQ-56WANMY3o8xy767WflkhaiXOWkF", options: ["Bhinneka Tunggal Ika", "Garuda Pancasila", "Satu Nusa Satu Bangsa", "Dari Sabang Sampai Merauke"] },
+      { title: "Desaku yang Kucinta", driveId: "1BcuDAJzuYmxYlu2qwy5P1XzOr0nBi1Es", options: ["Desaku yang Kucinta", "Nyiur Hijau", "Tanah Airku", "Rayuan Pulau Kelapa"] },
+      { title: "Pahlawan Tanpa Tanda Jasa", driveId: "19NXt32QY8QLH0SXS2G1S8i9uXo8G0WRo", options: ["Pahlawan Tanpa Tanda Jasa", "Ibu Kita Kartini", "Gugur Bunga", "Bagimu Negeri"] },
+      { title: "Nyiur Hijau", driveId: "1koJC_LSUkGQolIC8ppvwstYiPeiy0ClV", options: ["Nyiur Hijau", "Rayuan Pulau Kelapa", "Desaku yang Kucinta", "Tanah Airku"] },
+      { title: "Sorak Sorak Bergembira", driveId: "1DFHXTOl6hwc3bC0v9CBRIMvoWiPztaCC", options: ["Sorak Sorak Bergembira", "Maju Tak Gentar", "Hari Merdeka", "Garuda Pancasila"] },
+      { title: "Satu Nusa Satu Bangsa", driveId: "1QG5WJFvit8UsCiJilcd2s3sU8I1whR1B", options: ["Satu Nusa Satu Bangsa", "Bagimu Negeri", "Indonesia Pusaka", "Tanah Airku"] },
+      { title: "Bangun Pemudi Pemuda", driveId: "1mtbVcqu1TDxotC4iPxsstZs7stfqSmvO", options: ["Bangun Pemudi Pemuda", "Hari Merdeka", "Maju Tak Gentar", "Garuda Pancasila"] },
+      { title: "Dari Sabang Sampai Merauke", driveId: "1RhSH_SbwwWInubZD6E3L9zK4SjB_1rbP", options: ["Dari Sabang Sampai Merauke", "Halo Halo Bandung", "Satu Nusa Satu Bangsa", "Hari Merdeka"] },
+      { title: "Berkibarlah Benderaku", driveId: "1PnSvdnA_HsGYpZdjARojG4WaVUgMeuaX", options: ["Berkibarlah Benderaku", "Hari Merdeka", "Maju Tak Gentar", "Pancasila Rumah Kita"] },
+      { title: "Halo Halo Bandung", driveId: "1Oh3NeZh0ipUWHH7tKTiOIdmIrIkFL1H-", options: ["Halo Halo Bandung", "Dari Sabang Sampai Merauke", "Satu Nusa Satu Bangsa", "Nyiur Hijau"] },
+      { title: "Hari Merdeka", driveId: "12QbWI_UgE3eDJd7ytdi3NdFVSoWBmUlw", options: ["Hari Merdeka", "Berkibarlah Benderaku", "Pahlawan Tanpa Tanda Jasa", "Halo Halo Bandung"] },
+      { title: "Indonesia Pusaka", driveId: "1Isg7_9IxLIWWWyGwU0tSVmFVT_De_drT", options: ["Indonesia Pusaka", "Bagimu Negeri", "Syukur", "Bhinneka Tunggal Ika"] },
+      { title: "Gugur Bunga", driveId: "1YS5qS7CHV3plbR97-ZgE6BtjfOPX0Hjj", options: ["Gugur Bunga", "Syukur", "Pahlawan Tanpa Tanda Jasa", "Rayuan Pulau Kelapa"] },
+      { title: "Garuda Pancasila", driveId: "18DLZGivRYGcCq6c9pFLDgcdt3Xk8n4U5", options: ["Garuda Pancasila", "Maju Tak Gentar", "Halo Halo Bandung", "Hari Merdeka"] },
+      { title: "Tanah Airku", driveId: "1YjIhjOM1HrxCsN7Ikw42_OIowolvziS1", options: ["Tanah Airku", "Indonesia Pusaka", "Rayuan Pulau Kelapa", "Ibu Kita Kartini"] },
+      { title: "Bagimu Negeri", driveId: "1ZCfXChCCR1xWE0fVvlF_UPDEMdS4c8sf", options: ["Bagimu Negeri", "Syukur", "Indonesia Pusaka", "Gugur Bunga"] },
+      { title: "Ibu Kita Kartini", driveId: "1CnaEWT-SBG2DTdB9f-IjQ6uHcsD65Clo", options: ["Ibu Kita Kartini", "Bagimu Negeri", "Tanah Airku", "Rayuan Pulau Kelapa"] }
+    ];
+
+    function calculateRank(sc) {
+      if (sc <= 20) return "WARRIOR ⚔️";
+      if (sc <= 40) return "ELITE 🛡️";
+      if (sc <= 60) return "MASTER ⚔️✨";
+      if (sc <= 75) return "GRANDMASTER 👑";
+      if (sc <= 85) return "EPIC 💎";
+      if (sc <= 95) return "LEGEND 🦅";
+      return "MYTHIC 🌟🔥";
+    }
+
+    function playAudio() {
+      const currentQ = quizList[currentQuestionIdx];
+      const playerBox = document.getElementById("player-box");
+      const iframe = document.getElementById("drive-iframe");
+
+      iframe.src = getDriveUrl(currentQ.driveId);
+      playerBox.style.display = "block";
+    }
+
+    function stopAudio() {
+      const playerBox = document.getElementById("player-box");
+      const iframe = document.getElementById("drive-iframe");
+      
+      iframe.src = "";
+      playerBox.style.display = "none";
+    }
+
+    function startQuiz() {
+      const nameVal = document.getElementById("student-name").value.trim();
+      const classVal = document.getElementById("student-class").value.trim();
+
+      if (!nameVal || !classVal) {
+        alert("Harap isi Nama Lengkap dan Kelas terlebih dahulu!");
+        return;
+      }
+
+      studentName = nameVal;
+      studentClass = classVal;
+      document.getElementById("display-student").innerText = "Siswa: " + studentName + " (" + studentClass + ")";
+
+      quizList = [...RAW_QUIZ_DATA].sort(() => Math.random() - 0.5);
+
+      document.getElementById("start-screen").style.display = "none";
+      document.getElementById("quiz-area").style.display = "flex";
+
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      stopAudio();
+
+      const q = quizList[currentQuestionIdx];
+      document.getElementById("q-number").innerText = "SOAL " + (currentQuestionIdx + 1) + " / " + quizList.length;
+      
+      const container = document.getElementById("options-container");
+      container.innerHTML = "";
+
+      const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+
+      shuffledOptions.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option-card";
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(opt, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selectedOpt, btnElem) {
+      stopAudio();
+
+      const q = quizList[currentQuestionIdx];
+      const isCorrect = (selectedOpt === q.title);
+
+      if (isCorrect) {
+        score += 5;
+        btnElem.classList.add("correct-selected");
+      }
+
+      document.getElementById("score-badge").innerText = "SKOR: " + score;
+      document.getElementById("rank-badge").innerText = calculateRank(score);
+
+      setTimeout(() => {
+        currentQuestionIdx++;
+        if (currentQuestionIdx < quizList.length) {
+          loadQuestion();
+        } else {
+          showResult();
+        }
+      }, 1000);
+    }
+
+    function showResult() {
+      stopAudio();
+      document.getElementById("quiz-area").style.display = "none";
+      document.getElementById("result-screen").style.display = "flex";
+
+      const finalRank = calculateRank(score);
+      document.getElementById("final-score").innerText = score + " / 100";
+      document.getElementById("final-rank").innerText = "RANK: " + finalRank;
+
+      // KIRIM DATA KE GOOGLE SHEET
+      sendToGoogleSheet(studentName, studentClass, score, finalRank);
+    }
+
+    function sendToGoogleSheet(name, studentClass, score, rank) {
+      const statusElem = document.getElementById("save-status");
+      
+      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwY8GGMc1o0KTD1unlVcm_krzQbpYaLUBsnbgSzkJSiH0FbXa-hYKhWwm-pCCieWwDHHw/exec") {
+        statusElem.innerText = "⚠️ URL Google Script belum terpasang.";
+        return;
+      }
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name,
+          class: studentClass,
+          score: score,
+          rank: rank
+        })
+      })
+      .then(() => {
+        statusElem.innerText = "✅ Nilai berhasil tersimpan ke Google Sheet!";
+        statusElem.style.color = "#10b981";
+      })
+      .catch((err) => {
+        statusElem.innerText = "❌ Gagal menyimpan data.";
+        statusElem.style.color = "#ff007f";
+      });
+    }
+  </script>
+</body>
+</html>
