@@ -33,7 +33,7 @@
     }
     .student-badge { font-size: 13px; color: #00f0ff; font-weight: bold; }
     .status-group { display: flex; align-items: center; gap: 10px; }
-    .rank-badge { background: linear-gradient(135deg, #7928ca, #ff007f); padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 900; color: #ffe600; border: 1px solid #ffe600; }
+    .rank-badge { background: linear-gradient(135deg, #7928ca, #ff007f); padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 900; color: #ffe600; border: 1px solid #ffe600; transition: all 0.3s ease; }
     .score-badge { font-size: 16px; font-weight: 900; color: #ffe600; }
 
     /* START SCREEN */
@@ -109,8 +109,9 @@
     .option-card { background: #161224; border: 2px solid #332a54; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 800; color: #fff; text-align: center; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
     .option-card:active { transform: scale(0.98); }
     
-    /* JAWABAN BENAR HIJAU */
+    /* STYLES JAWABAN BENAR & SALAH */
     .option-card.correct-selected { background: #10b981 !important; border-color: #fff !important; color: #fff !important; box-shadow: 0 0 15px #10b981; }
+    .option-card.wrong-selected { background: #ef4444 !important; border-color: #fff !important; color: #fff !important; box-shadow: 0 0 15px #ef4444; }
 
     /* RESULT SCREEN */
     .result-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #282142 0%, #0b0914 100%); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
@@ -118,9 +119,45 @@
     .result-score { font-size: 48px; font-weight: 900; color: #00f0ff; text-shadow: 0 0 20px #00f0ff; margin-bottom: 10px; }
     .result-rank { font-size: 22px; font-weight: 900; color: #ff007f; margin-bottom: 15px; background: #161224; padding: 10px 20px; border-radius: 20px; border: 2px solid #ff007f; }
     .save-status { font-size: 13px; color: #00f0ff; margin-bottom: 20px; font-weight: bold; }
+
+    /* MODAL PERINGATAN ANTI-CHEAT */
+    .cheat-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(11, 9, 20, 0.95);
+      z-index: 10000;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 25px;
+      text-align: center;
+    }
+    .cheat-box {
+      background: #161224;
+      border: 3px solid #ef4444;
+      border-radius: 20px;
+      padding: 25px;
+      max-width: 380px;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+    }
+    .cheat-icon { font-size: 50px; margin-bottom: 10px; }
+    .cheat-title { color: #ef4444; font-size: 20px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
+    .cheat-desc { font-size: 14px; color: #ffffff; margin-bottom: 20px; line-height: 1.4; }
+    .cheat-btn { background: #ef4444; color: #fff; border: none; padding: 12px 25px; border-radius: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
   </style>
 </head>
 <body>
+
+  <!-- MODAL PERINGATAN KECURANGAN -->
+  <div class="cheat-modal" id="cheat-modal">
+    <div class="cheat-box">
+      <div class="cheat-icon">⚠️</div>
+      <div class="cheat-title">DILARANG BERPINDAH TAB / APLIKASI!</div>
+      <div class="cheat-desc" id="cheat-desc">Sistem mendeteksi Anda mencoba meninggalkan halaman kuis. Ini adalah peringatan PERTAMA! Jika diulangi lagi, Anda akan langsung DISKUALIFIKASI dengan nilai 0.</div>
+      <button class="cheat-btn" onclick="closeCheatModal()">SAYA MENGERTI 🙇‍♂️</button>
+    </div>
+  </div>
 
   <!-- START SCREEN -->
   <div class="start-screen" id="start-screen">
@@ -170,7 +207,7 @@
 
   <!-- RESULT SCREEN -->
   <div class="result-screen" id="result-screen">
-    <div class="result-title">HASIL KUIS TEBAK LAGU</div>
+    <div class="result-title" id="res-title">HASIL KUIS TEBAK LAGU</div>
     <div class="result-score" id="final-score">0 / 100</div>
     <div class="result-rank" id="final-rank">RANK: WARRIOR</div>
     <div class="save-status" id="save-status">⏳ Menyimpan nilai ke Google Sheet...</div>
@@ -178,14 +215,18 @@
   </div>
 
   <script>
-    // TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT KAMU DI SINI
-    const GOOGLE_SCRIPT_URL = "URL_GOOGLE_SCRIPT_KAMU_DI_SINI";
+    // MASUKKAN URL WEB APP GOOGLE APPS SCRIPT YANG BERAKHIRAN /exec DI SINI
+    const GOOGLE_SCRIPT_URL = "URL_WEB_APP_APPS_SCRIPT_BERAKHIRAN_EXEC_DI_SINI";
 
     let studentName = "";
     let studentClass = "";
     let currentQuestionIdx = 0;
     let score = 0;
     let quizList = [];
+    
+    // VARIABEL ANTI-CHEAT
+    let cheatWarnings = 0;
+    let isQuizActive = false;
 
     function getDriveUrl(fileId) {
       return "https://drive.google.com/file/d/" + fileId + "/preview";
@@ -214,13 +255,14 @@
       { title: "Ibu Kita Kartini", driveId: "1CnaEWT-SBG2DTdB9f-IjQ6uHcsD65Clo", options: ["Ibu Kita Kartini", "Bagimu Negeri", "Tanah Airku", "Rayuan Pulau Kelapa"] }
     ];
 
+    // PERHITUNGAN RANK MLBB DENGAN SKALA SKOR BERVARIASI
     function calculateRank(sc) {
-      if (sc <= 20) return "WARRIOR ⚔️";
-      if (sc <= 40) return "ELITE 🛡️";
-      if (sc <= 60) return "MASTER ⚔️✨";
-      if (sc <= 75) return "GRANDMASTER 👑";
-      if (sc <= 85) return "EPIC 💎";
-      if (sc <= 95) return "LEGEND 🦅";
+      if (sc <= 15) return "WARRIOR ⚔️";
+      if (sc <= 30) return "ELITE 🛡️";
+      if (sc <= 45) return "MASTER ⚔️✨";
+      if (sc <= 60) return "GRANDMASTER 👑";
+      if (sc <= 75) return "EPIC 💎";
+      if (sc <= 90) return "LEGEND 🦅";
       return "MYTHIC 🌟🔥";
     }
 
@@ -259,6 +301,7 @@
       document.getElementById("start-screen").style.display = "none";
       document.getElementById("quiz-area").style.display = "flex";
 
+      isQuizActive = true;
       loadQuestion();
     }
 
@@ -291,8 +334,21 @@
       if (isCorrect) {
         score += 5;
         btnElem.classList.add("correct-selected");
+      } else {
+        // JIKA SALAH: SKOR BERKURANG -5 DAN RANK MLBB TURUN AUTOMATIS
+        score = Math.max(0, score - 5);
+        btnElem.classList.add("wrong-selected");
+
+        // Tampilkan juga pilihan yang benar
+        const allCards = document.querySelectorAll('.option-card');
+        allCards.forEach(card => {
+          if (card.innerText === q.title) {
+            card.classList.add("correct-selected");
+          }
+        });
       }
 
+      // UPDATE BADGE SKOR DAN RANK REALTIME
       document.getElementById("score-badge").innerText = "SKOR: " + score;
       document.getElementById("rank-badge").innerText = calculateRank(score);
 
@@ -303,40 +359,76 @@
         } else {
           showResult();
         }
-      }, 1000);
+      }, 1200);
     }
 
-    function showResult() {
+    function showResult(isDisqualified = false) {
+      isQuizActive = false;
       stopAudio();
       document.getElementById("quiz-area").style.display = "none";
       document.getElementById("result-screen").style.display = "flex";
 
-      const finalRank = calculateRank(score);
-      document.getElementById("final-score").innerText = score + " / 100";
-      document.getElementById("final-rank").innerText = "RANK: " + finalRank;
+      let finalRank = calculateRank(score);
 
-      // KIRIM DATA KE GOOGLE SHEET
+      if (isDisqualified) {
+        score = 0;
+        finalRank = "DISQUALIFIED (CHEAT) 🚫";
+        document.getElementById("res-title").innerText = "KUIS DIBATALKAN!";
+        document.getElementById("res-title").style.color = "#ef4444";
+        document.getElementById("final-score").innerText = "0 / 100";
+        document.getElementById("final-rank").innerText = "RANK: " + finalRank;
+      } else {
+        document.getElementById("final-score").innerText = score + " / 100";
+        document.getElementById("final-rank").innerText = "RANK: " + finalRank;
+      }
+
+      // KIRIM HASIL KE GOOGLE SHEET
       sendToGoogleSheet(studentName, studentClass, score, finalRank);
     }
 
+    // KERANGKA PEMANTAU DETEKSI KECURANGAN (SWITCH TAB / MINIMIZE)
+    document.addEventListener("visibilitychange", function() {
+      if (document.hidden && isQuizActive) {
+        triggerCheatDetected();
+      }
+    });
+
+    function triggerCheatDetected() {
+      cheatWarnings++;
+      if (cheatWarnings === 1) {
+        document.getElementById("cheat-modal").style.display = "flex";
+      } else if (cheatWarnings >= 2) {
+        document.getElementById("cheat-modal").style.display = "none";
+        alert("🚨 Anda telah melakukan pelanggaran kecurangan berulang! Kuis langsung dihentikan dan diskualifikasi.");
+        showResult(true);
+      }
+    }
+
+    function closeCheatModal() {
+      document.getElementById("cheat-modal").style.display = "none";
+    }
+
+    // FUNGSI PENGIRIMAN DATA DENGAN FORMDATA (ANTI CORS)
     function sendToGoogleSheet(name, studentClass, score, rank) {
       const statusElem = document.getElementById("save-status");
-      
-      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwY8GGMc1o0KTD1unlVcm_krzQbpYaLUBsnbgSzkJSiH0FbXa-hYKhWwm-pCCieWwDHHw/exec") {
-        statusElem.innerText = "⚠️ URL Google Script belum terpasang.";
+
+      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("URL_WEB_APP")) {
+        statusElem.innerText = "⚠️ URL Web App belum dipasang dengan benar.";
         return;
       }
+
+      statusElem.innerText = "⏳ Menyimpan nilai ke Google Sheet...";
+
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("class", studentClass);
+      formData.append("score", score);
+      formData.append("rank", rank);
 
       fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name,
-          class: studentClass,
-          score: score,
-          rank: rank
-        })
+        body: formData
       })
       .then(() => {
         statusElem.innerText = "✅ Nilai berhasil tersimpan ke Google Sheet!";
@@ -350,3 +442,5 @@
   </script>
 </body>
 </html>
+
+
